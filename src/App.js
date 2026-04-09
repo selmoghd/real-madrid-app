@@ -6,7 +6,7 @@ function App() {
   const [competitionFilter, setCompetitionFilter] = useState("ALL");
 
   useEffect(() => {
-    fetch("http://localhost:5000/matches")
+    fetch("https://real-madrid-app.onrender.com/matches")
       .then((res) => res.json())
       .then((data) => {
         const competitionMap = {
