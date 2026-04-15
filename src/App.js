@@ -1,40 +1,54 @@
 import React, { useEffect, useState } from "react";
 
 function App() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); 
   const [matches, setMatches] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [competitionFilter, setCompetitionFilter] = useState("ALL");
 
-  useEffect(() => {
-    fetch("https://real-madrid-app.onrender.com/matches")
-      .then((res) => res.json())
-      .then((data) => {
-        const competitionMap = {
-          "Primera Division": "LaLiga",
-          "La Liga": "LaLiga",
-          "UEFA Champions League": "UCL",
-          "Champions League": "UCL",
-          "Copa del Rey": "Copa del Rey",
-        };
+ useEffect(() => {
+  const API_URL =
+    process.env.REACT_APP_API_URL ||
+    "https://real-madrid-app.onrender.com";
 
-        const formatted = data.matches.map((match) => ({
-          homeTeam: { name: match.homeTeam.name },
-          awayTeam: { name: match.awayTeam.name },
-          score: {
-            fullTime: {
-              home: match.score.fullTime.home,
-              away: match.score.fullTime.away,
-            },
+  fetch(`${API_URL}/matches`)
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to fetch data");
+      return res.json();
+    })
+    .then((data) => {
+      const competitionMap = {
+        "Primera Division": "LaLiga",
+        "La Liga": "LaLiga",
+        "UEFA Champions League": "UCL",
+        "Champions League": "UCL",
+        "Copa del Rey": "Copa del Rey",
+      };
+
+      const formatted = data.matches.map((match) => ({
+        homeTeam: { name: match.homeTeam.name },
+        awayTeam: { name: match.awayTeam.name },
+        score: {
+          fullTime: {
+            home: match.score.fullTime.home,
+            away: match.score.fullTime.away,
           },
-          date: match.utcDate.slice(0, 10),
-          competition:
-            competitionMap[match.competition.name] || "Other",
-        }));
+        },
+        date: match.utcDate.slice(0, 10),
+        competition:
+          competitionMap[match.competition.name] || "Other",
+      }));
 
-        setMatches(formatted);
-      })
-      .catch((err) => console.error(err));
-  }, []);
+      setMatches(formatted);
+      setLoading(false);
+    })
+    .catch((err) => {
+      console.error(err);
+      setError("Failed to load matches");
+      setLoading(false);
+    });
+}, []);
 
   const today = new Date();
   const isDateFiltering = selectedDate !== "";
@@ -85,6 +99,21 @@ function App() {
   const futureMatches = baseMatches.filter(
     (m) => new Date(m.date) >= new Date()
   );
+  if (loading) {
+  return (
+    <div style={{ color: "white", textAlign: "center", marginTop: "100px" }}>
+      Loading matches...
+    </div>
+  );
+}
+
+if (error) {
+  return (
+    <div style={{ color: "red", textAlign: "center", marginTop: "100px" }}>
+      {error}
+    </div>
+  );
+}
 
   return (
     <div
