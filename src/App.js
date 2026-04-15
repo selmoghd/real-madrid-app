@@ -1,34 +1,23 @@
 import React, { useEffect, useState } from "react";
 
 function App() {
-  // ===============================
-  // STATE MANAGEMENT
-  // ===============================
-  const [matches, setMatches] = useState([]); // Stores all matches
-  const [selectedDate, setSelectedDate] = useState(""); // Date filter
-  const [competitionFilter, setCompetitionFilter] = useState("ALL"); // Competition filter
+  const [matches, setMatches] = useState([]);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [competitionFilter, setCompetitionFilter] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // UI states
-  const [loading, setLoading] = useState(true); // Loading indicator
-  const [error, setError] = useState(null); // Error handling
-
-  // ===============================
-  // FETCH DATA FROM BACKEND
-  // ===============================
   useEffect(() => {
-    // Use environment variable OR fallback URL
     const API_URL =
       process.env.REACT_APP_API_URL ||
       "https://real-madrid-app.onrender.com";
 
     fetch(`${API_URL}/matches`)
       .then((res) => {
-        // If response fails, trigger error
-        if (!res.ok) throw new Error("Failed to fetch data");
+        if (!res.ok) throw new Error("Failed to fetch");
         return res.json();
       })
       .then((data) => {
-        // Map API competition names to cleaner labels
         const competitionMap = {
           "Primera Division": "LaLiga",
           "La Liga": "LaLiga",
@@ -37,7 +26,6 @@ function App() {
           "Copa del Rey": "Copa del Rey",
         };
 
-        // Format incoming data into simpler structure
         const formatted = data.matches.map((match) => ({
           homeTeam: { name: match.homeTeam.name },
           awayTeam: { name: match.awayTeam.name },
@@ -47,25 +35,20 @@ function App() {
               away: match.score.fullTime.away,
             },
           },
-          date: match.utcDate.slice(0, 10), // Keep only YYYY-MM-DD
+          date: match.utcDate.slice(0, 10),
           competition:
             competitionMap[match.competition.name] || "Other",
         }));
 
-        setMatches(formatted); // Save matches
-        setLoading(false); // Stop loading
+        setMatches(formatted);
+        setLoading(false);
       })
-      .catch((err) => {
-        console.error(err);
-        setError("Failed to load matches"); // Show error
+      .catch(() => {
+        setError("Failed to load matches");
         setLoading(false);
       });
   }, []);
 
-  // ===============================
-  // HELPER: RESULT COLOR
-  // ===============================
-  // Returns color based on match result
   const getResultColor = (result) => {
     if (result.includes("WIN")) return "#4CAF50";
     if (result.includes("LOSS")) return "#F44336";
@@ -73,15 +56,10 @@ function App() {
     return "#ccc";
   };
 
-  // ===============================
-  // FILTERING LOGIC
-  // ===============================
   const today = new Date();
-
   const isDateFiltering = selectedDate !== "";
   const isCompetitionFiltering = competitionFilter !== "ALL";
 
-  // Filter matches based on selected date + competition
   let baseMatches = matches.filter((match) => {
     const matchesDate =
       !selectedDate || match.date === selectedDate;
@@ -93,16 +71,11 @@ function App() {
     return matchesDate && matchesCompetition;
   });
 
-  // ===============================
-  // SORTING & LIMITING MATCHES
-  // ===============================
   if (isDateFiltering) {
-    // If filtering by date → show all results sorted
     baseMatches = baseMatches.sort(
       (a, b) => new Date(b.date) - new Date(a.date)
     );
   } else {
-    // Split into past & future matches
     const past = baseMatches
       .filter((m) => new Date(m.date) < today)
       .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -111,11 +84,9 @@ function App() {
       .filter((m) => new Date(m.date) >= today)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Default limits
     let pastLimit = 3;
     let futureLimit = 3;
 
-    // If filtering competition → show more
     if (isCompetitionFiltering) {
       pastLimit = 5;
       futureLimit = 5;
@@ -127,7 +98,6 @@ function App() {
     ];
   }
 
-  // Separate past and future matches for display
   const pastMatches = baseMatches.filter(
     (m) => new Date(m.date) < new Date()
   );
@@ -136,80 +106,73 @@ function App() {
     (m) => new Date(m.date) >= new Date()
   );
 
-  // ===============================
-  // LOADING UI
-  // ===============================
   if (loading) {
     return (
-      <div style={{ color: "white", textAlign: "center", marginTop: "100px" }}>
-        Loading matches...
+      <div style={centerStyle}>
+        <h2>Loading matches...</h2>
       </div>
     );
   }
 
-  // ===============================
-  // ERROR UI
-  // ===============================
   if (error) {
     return (
-      <div style={{ color: "red", textAlign: "center", marginTop: "100px" }}>
-        {error}
+      <div style={centerStyle}>
+        <h2 style={{ color: "red" }}>{error}</h2>
       </div>
     );
   }
 
-  // ===============================
-  // MAIN UI
-  // ===============================
   return (
-    <div
-      style={{
-        padding: "30px",
-        fontFamily: "Arial",
-        background: "linear-gradient(135deg, #0b1d3a, #091428)",
-        minHeight: "100vh",
-        color: "white",
-      }}
-    >
+    <div style={containerStyle}>
       {/* HEADER */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "12px",
-        marginBottom: "25px"
-      }}>
+      <div style={headerStyle}>
         <img
           src="https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg"
           alt="logo"
           style={{ width: "45px" }}
         />
-        <h1>Real Madrid Match Tracker</h1>
+        <h1 style={titleStyle}>
+          Real Madrid Match Tracker
+        </h1>
       </div>
 
       {/* DATE FILTER */}
-      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+      <div style={center}>
         <input
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
+          style={inputStyle}
         />
-        <button onClick={() => setSelectedDate("")}>
+
+        <button onClick={() => setSelectedDate("")} style={buttonStyle}>
           Clear Date
         </button>
       </div>
 
-      {/* COMPETITION FILTER */}
-      <div style={{ textAlign: "center", marginBottom: "25px" }}>
+      {/* FILTER BUTTONS */}
+      <div style={center}>
         {["ALL", "LaLiga", "UCL", "Copa del Rey", "Other"].map((comp) => (
-          <button key={comp} onClick={() => setCompetitionFilter(comp)}>
+          <button
+            key={comp}
+            onClick={() => setCompetitionFilter(comp)}
+            style={{
+              ...filterButton,
+              backgroundColor:
+                competitionFilter === comp
+                  ? "#ffd700"
+                  : "rgba(255,255,255,0.1)",
+              color:
+                competitionFilter === comp ? "#000" : "#fff",
+            }}
+          >
             {comp === "Copa del Rey" ? "Copa" : comp}
           </button>
         ))}
       </div>
 
-      {/* PAST MATCHES */}
-      <h2 style={{ textAlign: "center" }}>⬅️ Last Matches</h2>
+      {/* LAST MATCHES */}
+      <h2 style={sectionTitle}>⬅️ Last Matches</h2>
 
       {pastMatches.map((match, index) => {
         const home = match.score.fullTime.home;
@@ -218,13 +181,8 @@ function App() {
         const isRealMadridHome =
           match.homeTeam.name.includes("Real Madrid");
 
-        const isPlayed = home !== null && away !== null;
-
-        // Determine match result
         let result = "";
-
-        if (!isPlayed) result = "UPCOMING ⏳";
-        else if (home === away) result = "DRAW ⚪";
+        if (home === away) result = "DRAW ⚪";
         else if (
           (isRealMadridHome && home > away) ||
           (!isRealMadridHome && away > home)
@@ -232,18 +190,27 @@ function App() {
         else result = "LOSS 🔴";
 
         return (
-          <div key={index} style={cardStyle}>
-            <h3>
-              {match.homeTeam.name} vs {match.awayTeam.name}
-            </h3>
-
-            {home !== null && away !== null && (
-              <p>Score: {home} - {away}</p>
-            )}
+          <div
+            key={index}
+            style={cardStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.05)";
+              e.currentTarget.style.boxShadow =
+                "0 15px 40px rgba(0,0,0,0.7)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow =
+                "0 10px 30px rgba(0,0,0,0.5)";
+            }}
+          >
+            <h3>{match.homeTeam.name} vs {match.awayTeam.name}</h3>
+            <p>Score: {home} - {away}</p>
 
             <p style={{
               color: getResultColor(result),
-              fontWeight: "bold"
+              fontWeight: "bold",
+              fontSize: "18px"
             }}>
               {result}
             </p>
@@ -254,14 +221,12 @@ function App() {
         );
       })}
 
-      {/* UPCOMING MATCHES */}
-      <h2 style={{ textAlign: "center" }}>➡️ Upcoming Matches</h2>
+      {/* UPCOMING */}
+      <h2 style={sectionTitle}>➡️ Upcoming Matches</h2>
 
       {futureMatches.map((match, index) => (
         <div key={index} style={cardStyle}>
-          <h3>
-            {match.homeTeam.name} vs {match.awayTeam.name}
-          </h3>
+          <h3>{match.homeTeam.name} vs {match.awayTeam.name}</h3>
           <p>UPCOMING ⏳</p>
           <p>📅 {match.date}</p>
           <p>🏆 {match.competition}</p>
@@ -271,15 +236,79 @@ function App() {
   );
 }
 
-// ===============================
-// CARD STYLE
-// ===============================
+/* STYLES */
+
+const containerStyle = {
+  padding: "30px",
+  fontFamily: "Arial",
+  background: "linear-gradient(135deg, #0a1f44, #000814)",
+  minHeight: "100vh",
+  color: "white",
+};
+
+const center = { textAlign: "center", marginBottom: "20px" };
+
+const headerStyle = {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: "12px",
+  marginBottom: "25px",
+};
+
+const titleStyle = {
+  fontWeight: "800",
+  letterSpacing: "2px",
+  fontSize: "28px",
+};
+
+const inputStyle = {
+  padding: "10px",
+  borderRadius: "8px",
+  border: "none",
+  marginRight: "10px",
+};
+
+const buttonStyle = {
+  padding: "10px 16px",
+  borderRadius: "8px",
+  border: "none",
+  backgroundColor: "#ffd700",
+  cursor: "pointer",
+  fontWeight: "600",
+};
+
+const filterButton = {
+  margin: "6px",
+  padding: "10px 18px",
+  borderRadius: "25px",
+  border: "none",
+  cursor: "pointer",
+  transition: "0.3s",
+};
+
+const sectionTitle = {
+  textAlign: "center",
+  marginTop: "20px",
+  opacity: 0.8,
+};
+
 const cardStyle = {
-  background: "rgba(255, 255, 255, 0.05)",
+  background: "rgba(255, 255, 255, 0.07)",
+  backdropFilter: "blur(12px)",
   padding: "20px",
   margin: "15px auto",
-  borderRadius: "16px",
-  maxWidth: "500px",
+  borderRadius: "18px",
+  maxWidth: "520px",
+  boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+  border: "1px solid rgba(255,255,255,0.15)",
+  transition: "all 0.3s ease",
+};
+
+const centerStyle = {
+  color: "white",
+  textAlign: "center",
+  marginTop: "100px",
 };
 
 export default App;
